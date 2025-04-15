@@ -14,8 +14,6 @@ class GenerateModelApi(APIView):
 
         extracted_features = extract_features(query)
 
-        print(extracted_features)
-
         shape = extracted_features.get("shape")
         size = extracted_features.get("size")
         unit = extracted_features.get("unit")
