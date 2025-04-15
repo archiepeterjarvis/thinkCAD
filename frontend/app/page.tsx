@@ -79,7 +79,7 @@ export default function Home() {
             <div className="mt-16 relative w-full max-w-4xl mx-auto">
               <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl blur-md opacity-75"></div>
               <div className="relative h-[500px] rounded-lg overflow-hidden border bg-background">
-                <ModelViewer />
+                <ModelViewer url={"http://localhost:8002/static/models/0d52d6a7ccd54d9788040257d6a0de2c.glb"}/>
               </div>
             </div>
           </div>
