@@ -3,6 +3,9 @@ services:
     build: ./bert-service
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONPATH=/app
+    volumes:
+      - ./bert-service:/app
     deploy:
       resources:
         reservations:
@@ -15,9 +18,13 @@ services:
 
   cad-service:
     build: ./cad-service
+    volumes:
+      - ./cad-service:/app
     ports:
       - "8002:8000"
     restart: always
+    environment:
+      - PYTHONPATH=/app
 
   backend:
     build: ./backend
@@ -43,7 +50,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
     environment:
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
@@ -65,3 +72,4 @@ services:
 
 volumes:
   pgdata:
+  node_modules:
