@@ -33,7 +33,7 @@ function CameraController({ target = [0, 0, 0] }) {
 }
 
 // Preload the model to avoid issues
-useGLTF.preload("http://localhost:8002/static/models/0d52d6a7ccd54d9788040257d6a0de2c.glb")
+useGLTF.preload("http://localhost:8002/static/models/c48bb193f1ff47c5a7d2c3b1eb4239ff.glb")
 
 function Model({ url, onLoaded }) {
   const { scene } = useGLTF(url)
@@ -55,7 +55,7 @@ function Model({ url, onLoaded }) {
 }
 
 export default function ModelViewer({url}: {url?: string}) {
-  const [modelUrl, setModelUrl] = useState(url || "http://localhost:8002/static/models/0d52d6a7ccd54d9788040257d6a0de2c.glb")
+  const [modelUrl, setModelUrl] = useState(url || "http://localhost:8002/static/models/c48bb193f1ff47c5a7d2c3b1eb4239ff.glb")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const canvasRef = useRef(null)

@@ -91,7 +91,7 @@ export default function ChatInterface() {
             role: "assistant",
             content: `I've created a 3D model based on your description: "${input}". You can view, rotate, and download it.`,
             timestamp: new Date(),
-            modelUrl: currentModelUrl,
+            modelUrl: currentModelUrl || "",
         }
 
         setMessages((prev) => [...prev, aiMessage])
