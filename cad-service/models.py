@@ -1,14 +1,23 @@
-from pydantic import BaseModel
+import enum
+from typing import Literal, List, Union
+
+from pydantic import BaseModel, Field
 
 
-class GenerateParams(BaseModel):
-    # For basic shapes
-    shape: str
-    size: str
-    unit: str
+class ShapeToken(BaseModel):
+    type: Literal['SHAPE']
+    tokens: List[str]
 
-    # For gears
-    module: float
-    teeth: float
-    gear_height: float
-    center_hole_diameter: float
+class GroupSubToken(BaseModel):
+    name: str
+    value: str
+
+class GroupToken(BaseModel):
+    type: Literal['GROUP']
+    tokens: List[GroupSubToken]
+
+TokenItem = Union[ShapeToken, GroupToken]
+
+class Shapes(enum.Enum):
+    CUBE = "cube"
+    CUBOID = "cuboid"

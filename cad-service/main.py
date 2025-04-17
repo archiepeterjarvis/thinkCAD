@@ -1,11 +1,13 @@
+from typing import List
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 import generator
+import models
 import utils
-from models import GenerateParams
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -17,8 +19,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/generate")
-def generate(params: GenerateParams):
-    shape = generator.generate_shape(params)
+def generate(data: List[models.TokenItem]):
+    shape = generator.generate_shape(data)
+
+    if not shape:
+        return JSONResponse(content={'error': 'error'}, status_code=404)
+
     url = utils.save_to_file(shape).split("/", 1)[-1]
     return JSONResponse(content={"url": url})
