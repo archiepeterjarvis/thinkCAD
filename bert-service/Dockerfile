@@ -1,10 +1,10 @@
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
 
 WORKDIR /app
 
-COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install transformers[torch] datasets huggingface_hub[hf_xet] tokenizers
+RUN pip install fastapi[standard] uvicorn
 
 COPY . .
 

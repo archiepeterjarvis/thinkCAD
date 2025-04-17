@@ -1,63 +1,118 @@
 import torch
-from transformers import AutoTokenizer, BertForTokenClassification
+from transformers import AutoTokenizer, AutoModelForTokenClassification
 
-id_to_label = {
-    0: "O",
-    1: "B-SHAPE",
-    2: "B-SIZE",
-    3: "B-UNIT",
-    4: "B-TEETH",
-    5: "B-MODULE",
-    6: "B-GEAR_HEIGHT",
-    7: "B-HOLE_DIAMETER",
-}
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_model_and_tokenizer(model_path='./model', device='cuda'):
-    model = BertForTokenClassification.from_pretrained(model_path).to(device)
+
+def load_model(model_path: str = "./model"):
+    """
+    Load the pretrained model
+    :param model_path: Path to the pretrained model (default: ./model)
+    :return: The model (eval and moved to device) and tokenizer
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = AutoModelForTokenClassification.from_pretrained(model_path)
+
+    model.to(device)
+    model.eval()
+
     return model, tokenizer
 
-def extract_shape_features(text, model, tokenizer, device='cuda'):
-    model.eval()  # Evaluation mode
 
-    inputs = tokenizer(text, return_tensors="pt").to(device)
+def predict(text: str, model, tokenizer):
+    """
+    Predict text using a trained model
+    :param text: Text to be predicted
+    :param model: The trained model
+    :param tokenizer: The tokenizer
+    :return: A list of predictions
+    """
+    encoded_text = tokenizer(
+        text,
+        return_tensors="pt",
+        return_offsets_mapping=True,
+        padding=True,
+        truncation=True,
+    )
+    offset_mapping = encoded_text.pop("offset_mapping")
+
+    for key in encoded_text:
+        encoded_text[key] = encoded_text[key].to(model.device)
 
     with torch.no_grad():
-        outputs = model(**inputs)
+        outputs = model(**encoded_text)
         predictions = torch.argmax(outputs.logits, dim=2)
 
-    predicted_labels = [id_to_label[token_pred.item()] for token_pred in predictions[0]]
+    id2label = model.config.id2label
+    predicted_labels = [id2label[prediction.item()] for prediction in predictions[0]]
 
-    tokens = tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])
+    tokens = tokenizer.convert_ids_to_tokens(encoded_text["input_ids"][0])
 
-    shape, size, unit, teeth, module, gear_height, hole_diameter = None, None, None, None, None, None, None
-
-    for token, label in zip(tokens, predicted_labels):
-        if token in ['[CLS]', '[SEP]', '[PAD]'] or token.startswith('##'):
+    token_predictions = []
+    for token, label, offset in zip(tokens, predicted_labels, offset_mapping[0]):
+        if offset[0] == offset[1]:
             continue
+        token_predictions.append((token, label))
 
-        if label == 'B-SHAPE':
-            shape = token
-        elif label == 'B-SIZE':
-            size = token
-        elif label == 'B-UNIT':
-            unit = token
-        elif label == 'B-TEETH':
-            teeth = token
-        elif label == 'B-MODULE':
-            module = token
-        elif label == 'B-GEAR_HEIGHT':
-            gear_height = token
-        elif label == "B-HOLE_DIAMETER":
-            hole_diameter = token
+    word_predictions = []
+    current_word = ""
+    current_label = None
 
-    return {
-        "shape": shape,
-        "size": size,
-        "unit": unit,
-        "teeth": teeth,
-        "gear_height": gear_height,
-        "module": module,
-        "center_hole_diameter": hole_diameter
-    }
+    for token, label in token_predictions:
+        if token.startswith("##"):
+            current_word += token[2:]
+        else:
+            if current_word:
+                word_predictions.append((current_word, current_label))
+            current_word = token
+            current_label = label
 
+    if current_word:
+        word_predictions.append((current_word, current_label))
+
+    return word_predictions
+
+
+def extract_and_group_entities(predictions):
+    entities = []
+    current_entity = {"type": None, "tokens": []}
+
+    for token, label in predictions:
+        if label.startswith("U-"):
+            entity_type = label[2:]
+            entities.append({"type": entity_type, "tokens": [token]})
+
+        elif label.startswith("B-"):
+            entity_type = "GROUP"
+            current_entity["type"] = entity_type
+            current_entity["tokens"].append({
+                "name": label[2:],
+                "value": token,
+            })
+        elif label.startswith("I-") and current_entity["type"]:
+            current_entity["tokens"].append({
+                "name": label[2:],
+                "value": token,
+            })
+        elif label.startswith("L-") and current_entity["type"]:
+            current_entity["tokens"].append({
+                "name": label[2:],
+                "value": token,
+            })
+            entities.append(current_entity)
+            current_entity = {"type": None, "tokens": []}
+
+    return entities
+
+if __name__ == "__main__":
+    model, tokenizer = load_model()
+
+    query = "A helical gear with 8 teeth with 46.2 cm radius"
+
+    predictions = predict(query, model, tokenizer)
+
+    print(predictions)
+
+    entities = extract_and_group_entities(predictions)
+
+    print(entities)
