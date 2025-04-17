@@ -3,9 +3,11 @@ from fastapi import FastAPI
 import inference
 
 app = FastAPI()
-model, tokenizer = inference.load_model_and_tokenizer()
+model, tokenizer = inference.load_model()
 
 
 @app.post("/extract_features")
 async def extract_features(query: str):
-    return inference.extract_shape_features(query, model, tokenizer)
+    predictions = inference.predict(text=query, model=model, tokenizer=tokenizer)
+    entities = inference.extract_and_group_entities(predictions)
+    return entities
